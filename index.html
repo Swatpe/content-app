@@ -44,7 +44,7 @@ const ContentManagementApp = () => {
     }
     
     if (editingEntry) {
-      setEntries(entries.map(entry => 
+      setEntries(prev => prev.map(entry => 
         entry.id === editingEntry.id 
           ? { ...formData, id: editingEntry.id, createdAt: editingEntry.createdAt, updatedAt: new Date().toISOString() }
           : entry
@@ -57,7 +57,7 @@ const ContentManagementApp = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      setEntries([...entries, newEntry]);
+      setEntries(prev => [...prev, newEntry]);
     }
     
     resetForm();
@@ -79,7 +79,7 @@ const ContentManagementApp = () => {
   };
 
   const deleteEntry = (id) => {
-    setEntries(entries.filter(entry => entry.id !== id));
+    setEntries(prev => prev.filter(entry => entry.id !== id));
   };
 
   // Kategorie-Management
@@ -90,47 +90,50 @@ const ContentManagementApp = () => {
         id: newCategory.name.toLowerCase().replace(/\s+/g, '_'),
         options: [...newCategory.options]
       };
-      setCategories([...categories, category]);
+      setCategories(prev => [...prev, category]);
       setNewCategory({ name: '', type: 'dropdown', options: [] });
     }
   };
 
   const addOption = () => {
     if (newOption.trim()) {
-      setNewCategory({
-        ...newCategory,
-        options: [...newCategory.options, newOption.trim()]
-      });
+      setNewCategory(prev => ({
+        ...prev,
+        options: [...prev.options, newOption.trim()]
+      }));
       setNewOption('');
     }
   };
 
   const removeOption = (index) => {
-    setNewCategory({
-      ...newCategory,
-      options: newCategory.options.filter((_, i) => i !== index)
-    });
+    setNewCategory(prev => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index)
+    }));
   };
 
   const deleteCategory = (categoryId) => {
     if (categoryId !== 'geschlecht') { // Geschlecht kann nicht gelöscht werden
-      setCategories(categories.filter(cat => cat.id !== categoryId));
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
       // Auch aus allen Einträgen entfernen
-      setEntries(entries.map(entry => {
-        const { [categoryId]: removed, ...rest } = entry.customFields || {};
-        return { ...entry, customFields: rest };
+      setEntries(prev => prev.map(entry => {
+        if (entry.customFields && entry.customFields[categoryId]) {
+          const { [categoryId]: removed, ...rest } = entry.customFields;
+          return { ...entry, customFields: rest };
+        }
+        return entry;
       }));
     }
   };
 
   const handleCustomFieldChange = (categoryId, value) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       customFields: {
-        ...formData.customFields,
+        ...(prev.customFields || {}),
         [categoryId]: value
       }
-    });
+    }));
   };
 
   // Main View Render
@@ -167,7 +170,7 @@ const ContentManagementApp = () => {
                 type="text"
                 required
                 value={formData.vorname}
-                onChange={(e) => setFormData({ ...formData, vorname: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, vorname: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -180,7 +183,7 @@ const ContentManagementApp = () => {
                 type="text"
                 required
                 value={formData.nachname}
-                onChange={(e) => setFormData({ ...formData, nachname: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, nachname: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -193,7 +196,7 @@ const ContentManagementApp = () => {
             <textarea
               required
               value={formData.wohnadresse}
-              onChange={(e) => setFormData({ ...formData, wohnadresse: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, wohnadresse: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows="3"
             />
@@ -210,7 +213,7 @@ const ContentManagementApp = () => {
                 value={category.id === 'geschlecht' ? formData.geschlecht : (formData.customFields?.[category.id] || '')}
                 onChange={(e) => {
                   if (category.id === 'geschlecht') {
-                    setFormData({ ...formData, geschlecht: e.target.value });
+                    setFormData(prev => ({ ...prev, geschlecht: e.target.value }));
                   } else {
                     handleCustomFieldChange(category.id, e.target.value);
                   }
@@ -353,7 +356,7 @@ const ContentManagementApp = () => {
             <input
               type="text"
               value={newCategory.name}
-              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="z.B. Abteilung, Status, etc."
             />
