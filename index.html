@@ -1,0 +1,475 @@
+import React, { useState } from 'react';
+import { User, Settings, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+
+const ContentManagementApp = () => {
+  // Grundlegende Datenstrukturen
+  const [entries, setEntries] = useState([]);
+  const [categories, setCategories] = useState([
+    { id: 'geschlecht', name: 'Geschlecht', type: 'dropdown', options: ['Männlich', 'Weiblich', 'Divers'] }
+  ]);
+  const [currentView, setCurrentView] = useState('main'); // 'main' oder 'admin'
+  
+  // Form States
+  const [formData, setFormData] = useState({
+    vorname: '',
+    nachname: '',
+    wohnadresse: '',
+    geschlecht: '',
+    customFields: {}
+  });
+  const [editingEntry, setEditingEntry] = useState(null);
+  
+  // Admin States
+  const [newCategory, setNewCategory] = useState({ name: '', type: 'dropdown', options: [] });
+  const [newOption, setNewOption] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  // Eintrag erstellen/bearbeiten
+  const handleSubmit = () => {
+    // Validierung
+    if (!formData.vorname || !formData.nachname || !formData.wohnadresse || !formData.geschlecht) {
+      alert('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    
+    // Überprüfe alle benutzerdefinierten Kategorien
+    for (const category of categories) {
+      if (category.id !== 'geschlecht') {
+        const value = formData.customFields?.[category.id];
+        if (!value) {
+          alert(`Bitte wählen Sie eine Option für ${category.name}.`);
+          return;
+        }
+      }
+    }
+    
+    if (editingEntry) {
+      setEntries(entries.map(entry => 
+        entry.id === editingEntry.id 
+          ? { ...formData, id: editingEntry.id, createdAt: editingEntry.createdAt, updatedAt: new Date().toISOString() }
+          : entry
+      ));
+      setEditingEntry(null);
+    } else {
+      const newEntry = {
+        ...formData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setEntries([...entries, newEntry]);
+    }
+    
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      vorname: '',
+      nachname: '',
+      wohnadresse: '',
+      geschlecht: '',
+      customFields: {}
+    });
+  };
+
+  const editEntry = (entry) => {
+    setFormData(entry);
+    setEditingEntry(entry);
+  };
+
+  const deleteEntry = (id) => {
+    setEntries(entries.filter(entry => entry.id !== id));
+  };
+
+  // Kategorie-Management
+  const addCategory = () => {
+    if (newCategory.name && newCategory.options.length > 0) {
+      const category = {
+        ...newCategory,
+        id: newCategory.name.toLowerCase().replace(/\s+/g, '_'),
+        options: [...newCategory.options]
+      };
+      setCategories([...categories, category]);
+      setNewCategory({ name: '', type: 'dropdown', options: [] });
+    }
+  };
+
+  const addOption = () => {
+    if (newOption.trim()) {
+      setNewCategory({
+        ...newCategory,
+        options: [...newCategory.options, newOption.trim()]
+      });
+      setNewOption('');
+    }
+  };
+
+  const removeOption = (index) => {
+    setNewCategory({
+      ...newCategory,
+      options: newCategory.options.filter((_, i) => i !== index)
+    });
+  };
+
+  const deleteCategory = (categoryId) => {
+    if (categoryId !== 'geschlecht') { // Geschlecht kann nicht gelöscht werden
+      setCategories(categories.filter(cat => cat.id !== categoryId));
+      // Auch aus allen Einträgen entfernen
+      setEntries(entries.map(entry => {
+        const { [categoryId]: removed, ...rest } = entry.customFields || {};
+        return { ...entry, customFields: rest };
+      }));
+    }
+  };
+
+  const handleCustomFieldChange = (categoryId, value) => {
+    setFormData({
+      ...formData,
+      customFields: {
+        ...formData.customFields,
+        [categoryId]: value
+      }
+    });
+  };
+
+  // Main View Render
+  const renderMainView = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <User className="w-6 h-6" />
+          Content Management
+        </h1>
+        <button
+          onClick={() => setCurrentView('admin')}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+          Administration
+        </button>
+      </div>
+
+      {/* Formular */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          {editingEntry ? 'Eintrag bearbeiten' : 'Neuen Eintrag erstellen'}
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Vorname *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.vorname}
+                onChange={(e) => setFormData({ ...formData, vorname: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nachname *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.nachname}
+                onChange={(e) => setFormData({ ...formData, nachname: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Wohnadresse *
+            </label>
+            <textarea
+              required
+              value={formData.wohnadresse}
+              onChange={(e) => setFormData({ ...formData, wohnadresse: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="3"
+            />
+          </div>
+
+          {/* Dynamische Kategorien */}
+          {categories.map(category => (
+            <div key={category.id}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {category.name} *
+              </label>
+              <select
+                required
+                value={category.id === 'geschlecht' ? formData.geschlecht : (formData.customFields?.[category.id] || '')}
+                onChange={(e) => {
+                  if (category.id === 'geschlecht') {
+                    setFormData({ ...formData, geschlecht: e.target.value });
+                  } else {
+                    handleCustomFieldChange(category.id, e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Bitte wählen...</option>
+                {category.options.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {editingEntry ? 'Speichern' : 'Erstellen'}
+            </button>
+            
+            {editingEntry && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingEntry(null);
+                  resetForm();
+                }}
+                className="flex items-center gap-2 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Abbrechen
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* Einträge Liste */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Alle Einträge ({entries.length})
+          </h2>
+        </div>
+        
+        {entries.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            Noch keine Einträge vorhanden. Erstellen Sie den ersten Eintrag!
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {entries.map(entry => (
+              <div key={entry.id} className="p-4 hover:bg-gray-50">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg text-gray-800">
+                      {entry.vorname} {entry.nachname}
+                    </h3>
+                    <p className="text-gray-600">
+                      <strong>Adresse:</strong> {entry.wohnadresse}
+                    </p>
+                    <p className="text-gray-600">
+                      <strong>Geschlecht:</strong> {entry.geschlecht}
+                    </p>
+                    
+                    {/* Dynamische Felder anzeigen */}
+                    {Object.entries(entry.customFields || {}).map(([fieldId, value]) => {
+                      const category = categories.find(cat => cat.id === fieldId);
+                      return category ? (
+                        <p key={fieldId} className="text-gray-600">
+                          <strong>{category.name}:</strong> {value}
+                        </p>
+                      ) : null;
+                    })}
+                    
+                    <p className="text-sm text-gray-400">
+                      Erstellt: {new Date(entry.createdAt).toLocaleString('de-DE')}
+                      {entry.updatedAt !== entry.createdAt && (
+                        <span> | Bearbeitet: {new Date(entry.updatedAt).toLocaleString('de-DE')}</span>
+                      )}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => editEntry(entry)}
+                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                      title="Bearbeiten"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteEntry(entry.id)}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Admin View Render
+  const renderAdminView = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <Settings className="w-6 h-6" />
+          Administration
+        </h1>
+        <button
+          onClick={() => setCurrentView('main')}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <User className="w-4 h-4" />
+          Zurück zur Hauptseite
+        </button>
+      </div>
+
+      {/* Neue Kategorie erstellen */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Neue Kategorie erstellen</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Kategorie Name
+            </label>
+            <input
+              type="text"
+              value={newCategory.name}
+              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="z.B. Abteilung, Status, etc."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Optionen hinzufügen
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Option eingeben..."
+              />
+              <button
+                type="button"
+                onClick={addOption}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {newCategory.options.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Aktuelle Optionen:
+              </label>
+              <div className="space-y-2">
+                {newCategory.options.map((option, index) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <span>{option}</span>
+                    <button
+                      onClick={() => removeOption(index)}
+                      className="text-red-600 hover:bg-red-100 p-1 rounded transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={addCategory}
+            disabled={!newCategory.name || newCategory.options.length === 0}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            Kategorie erstellen
+          </button>
+        </div>
+      </div>
+
+      {/* Bestehende Kategorien */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Bestehende Kategorien ({categories.length})
+          </h2>
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          {categories.map(category => (
+            <div key={category.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-800">
+                    {category.name}
+                    {category.id === 'geschlecht' && (
+                      <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        Standard
+                      </span>
+                    )}
+                  </h3>
+                  <div className="mt-2">
+                    <span className="text-sm text-gray-600">Optionen: </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {category.options.map(option => (
+                        <span key={option} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm">
+                          {option}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {category.id !== 'geschlecht' && (
+                  <button
+                    onClick={() => deleteCategory(category.id)}
+                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                    title="Kategorie löschen"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-4xl mx-auto">
+        {currentView === 'main' ? renderMainView() : renderAdminView()}
+      </div>
+    </div>
+  );
+};
+
+export default ContentManagementApp;
