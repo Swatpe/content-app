@@ -22,7 +22,6 @@ const ContentManagementApp = () => {
   // Admin States
   const [newCategory, setNewCategory] = useState({ name: '', type: 'dropdown', options: [] });
   const [newOption, setNewOption] = useState('');
-  const [editingCategory, setEditingCategory] = useState(null);
 
   // Eintrag erstellen/bearbeiten
   const handleSubmit = () => {
@@ -252,7 +251,7 @@ const ContentManagementApp = () => {
               </button>
             )}
           </div>
-        </form>
+        </div>
       </div>
 
       {/* Einträge Liste */}
