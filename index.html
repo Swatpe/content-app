@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { User, Settings, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 
 const ContentManagementApp = () => {
-  // Grundlegende Datenstrukturen
+  // Basic data structures
   const [entries, setEntries] = useState([]);
   const [categories, setCategories] = useState([
-    { id: 'geschlecht', name: 'Geschlecht', type: 'dropdown', options: ['Männlich', 'Weiblich', 'Divers'] }
+    { id: 'gender', name: 'Gender', type: 'dropdown', options: ['Male', 'Female', 'Other'] }
   ]);
-  const [currentView, setCurrentView] = useState('main'); // 'main' oder 'admin'
+  const [currentView, setCurrentView] = useState('main'); // 'main' or 'admin'
   
   // Form States
   const [formData, setFormData] = useState({
-    vorname: '',
-    nachname: '',
-    wohnadresse: '',
-    geschlecht: '',
+    firstName: '',
+    lastName: '',
+    address: '',
+    gender: '',
     customFields: {}
   });
   const [editingEntry, setEditingEntry] = useState(null);
@@ -23,20 +23,20 @@ const ContentManagementApp = () => {
   const [newCategory, setNewCategory] = useState({ name: '', type: 'dropdown', options: [] });
   const [newOption, setNewOption] = useState('');
 
-  // Eintrag erstellen/bearbeiten
+  // Create/edit entry
   const handleSubmit = () => {
-    // Validierung
-    if (!formData.vorname || !formData.nachname || !formData.wohnadresse || !formData.geschlecht) {
-      alert('Bitte füllen Sie alle Pflichtfelder aus.');
+    // Validation
+    if (!formData.firstName || !formData.lastName || !formData.address || !formData.gender) {
+      alert('Please fill in all required fields.');
       return;
     }
     
-    // Überprüfe alle benutzerdefinierten Kategorien
+    // Check all custom categories
     for (const category of categories) {
-      if (category.id !== 'geschlecht') {
+      if (category.id !== 'gender') {
         const value = formData.customFields?.[category.id];
         if (!value) {
-          alert(`Bitte wählen Sie eine Option für ${category.name}.`);
+          alert(`Please select an option for ${category.name}.`);
           return;
         }
       }
@@ -64,10 +64,10 @@ const ContentManagementApp = () => {
 
   const resetForm = () => {
     setFormData({
-      vorname: '',
-      nachname: '',
-      wohnadresse: '',
-      geschlecht: '',
+      firstName: '',
+      lastName: '',
+      address: '',
+      gender: '',
       customFields: {}
     });
   };
@@ -78,10 +78,12 @@ const ContentManagementApp = () => {
   };
 
   const deleteEntry = (id) => {
-    setEntries(prev => prev.filter(entry => entry.id !== id));
+    if (window.confirm('Are you sure you want to delete this entry?')) {
+      setEntries(prev => prev.filter(entry => entry.id !== id));
+    }
   };
 
-  // Kategorie-Management
+  // Category management
   const addCategory = () => {
     if (newCategory.name && newCategory.options.length > 0) {
       const category = {
@@ -112,16 +114,18 @@ const ContentManagementApp = () => {
   };
 
   const deleteCategory = (categoryId) => {
-    if (categoryId !== 'geschlecht') { // Geschlecht kann nicht gelöscht werden
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-      // Auch aus allen Einträgen entfernen
-      setEntries(prev => prev.map(entry => {
-        if (entry.customFields && entry.customFields[categoryId]) {
-          const { [categoryId]: removed, ...rest } = entry.customFields;
-          return { ...entry, customFields: rest };
-        }
-        return entry;
-      }));
+    if (categoryId !== 'gender') { // Gender cannot be deleted
+      if (window.confirm('Are you sure you want to delete this category? This will remove it from all entries.')) {
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        // Also remove from all entries
+        setEntries(prev => prev.map(entry => {
+          if (entry.customFields && entry.customFields[categoryId]) {
+            const { [categoryId]: removed, ...rest } = entry.customFields;
+            return { ...entry, customFields: rest };
+          }
+          return entry;
+        }));
+      }
     }
   };
 
@@ -153,36 +157,36 @@ const ContentManagementApp = () => {
         </button>
       </div>
 
-      {/* Formular */}
+      {/* Form */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">
-          {editingEntry ? 'Eintrag bearbeiten' : 'Neuen Eintrag erstellen'}
+          {editingEntry ? 'Edit Entry' : 'Create New Entry'}
         </h2>
         
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vorname *
+                First Name *
               </label>
               <input
                 type="text"
                 required
-                value={formData.vorname}
-                onChange={(e) => setFormData(prev => ({ ...prev, vorname: e.target.value }))}
+                value={formData.firstName}
+                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nachname *
+                Last Name *
               </label>
               <input
                 type="text"
                 required
-                value={formData.nachname}
-                onChange={(e) => setFormData(prev => ({ ...prev, nachname: e.target.value }))}
+                value={formData.lastName}
+                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -190,18 +194,18 @@ const ContentManagementApp = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Wohnadresse *
+              Address *
             </label>
             <textarea
               required
-              value={formData.wohnadresse}
-              onChange={(e) => setFormData(prev => ({ ...prev, wohnadresse: e.target.value }))}
+              value={formData.address}
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows="3"
             />
           </div>
 
-          {/* Dynamische Kategorien */}
+          {/* Dynamic Categories */}
           {categories.map(category => (
             <div key={category.id}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -209,17 +213,17 @@ const ContentManagementApp = () => {
               </label>
               <select
                 required
-                value={category.id === 'geschlecht' ? formData.geschlecht : (formData.customFields?.[category.id] || '')}
+                value={category.id === 'gender' ? formData.gender : (formData.customFields?.[category.id] || '')}
                 onChange={(e) => {
-                  if (category.id === 'geschlecht') {
-                    setFormData(prev => ({ ...prev, geschlecht: e.target.value }));
+                  if (category.id === 'gender') {
+                    setFormData(prev => ({ ...prev, gender: e.target.value }));
                   } else {
                     handleCustomFieldChange(category.id, e.target.value);
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Bitte wählen...</option>
+                <option value="">Please select...</option>
                 {category.options.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -234,7 +238,7 @@ const ContentManagementApp = () => {
               className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Save className="w-4 h-4" />
-              {editingEntry ? 'Speichern' : 'Erstellen'}
+              {editingEntry ? 'Save' : 'Create'}
             </button>
             
             {editingEntry && (
@@ -247,24 +251,24 @@ const ContentManagementApp = () => {
                 className="flex items-center gap-2 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
                 <X className="w-4 h-4" />
-                Abbrechen
+                Cancel
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Einträge Liste */}
+      {/* Entries List */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b">
           <h2 className="text-xl font-semibold text-gray-800">
-            Alle Einträge ({entries.length})
+            All Entries ({entries.length})
           </h2>
         </div>
         
         {entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Noch keine Einträge vorhanden. Erstellen Sie den ersten Eintrag!
+            No entries yet. Create your first entry!
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -273,16 +277,16 @@ const ContentManagementApp = () => {
                 <div className="flex justify-between items-start">
                   <div className="space-y-2">
                     <h3 className="font-semibold text-lg text-gray-800">
-                      {entry.vorname} {entry.nachname}
+                      {entry.firstName} {entry.lastName}
                     </h3>
                     <p className="text-gray-600">
-                      <strong>Adresse:</strong> {entry.wohnadresse}
+                      <strong>Address:</strong> {entry.address}
                     </p>
                     <p className="text-gray-600">
-                      <strong>Geschlecht:</strong> {entry.geschlecht}
+                      <strong>Gender:</strong> {entry.gender}
                     </p>
                     
-                    {/* Dynamische Felder anzeigen */}
+                    {/* Display dynamic fields */}
                     {Object.entries(entry.customFields || {}).map(([fieldId, value]) => {
                       const category = categories.find(cat => cat.id === fieldId);
                       return category ? (
@@ -293,9 +297,9 @@ const ContentManagementApp = () => {
                     })}
                     
                     <p className="text-sm text-gray-400">
-                      Erstellt: {new Date(entry.createdAt).toLocaleString('de-DE')}
+                      Created: {new Date(entry.createdAt).toLocaleString()}
                       {entry.updatedAt !== entry.createdAt && (
-                        <span> | Bearbeitet: {new Date(entry.updatedAt).toLocaleString('de-DE')}</span>
+                        <span> | Updated: {new Date(entry.updatedAt).toLocaleString()}</span>
                       )}
                     </p>
                   </div>
@@ -304,14 +308,14 @@ const ContentManagementApp = () => {
                     <button
                       onClick={() => editEntry(entry)}
                       className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                      title="Bearbeiten"
+                      title="Edit"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => deleteEntry(entry.id)}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                      title="Löschen"
+                      title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -339,31 +343,31 @@ const ContentManagementApp = () => {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <User className="w-4 h-4" />
-          Zurück zur Hauptseite
+          Back to Main
         </button>
       </div>
 
-      {/* Neue Kategorie erstellen */}
+      {/* Create New Category */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Neue Kategorie erstellen</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Create New Category</h2>
         
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kategorie Name
+              Category Name
             </label>
             <input
               type="text"
               value={newCategory.name}
               onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="z.B. Abteilung, Status, etc."
+              placeholder="e.g., Department, Status, etc."
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Optionen hinzufügen
+              Add Options
             </label>
             <div className="flex gap-2">
               <input
@@ -372,7 +376,7 @@ const ContentManagementApp = () => {
                 onChange={(e) => setNewOption(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Option eingeben..."
+                placeholder="Enter option..."
               />
               <button
                 type="button"
@@ -387,7 +391,7 @@ const ContentManagementApp = () => {
           {newCategory.options.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Aktuelle Optionen:
+                Current Options:
               </label>
               <div className="space-y-2">
                 {newCategory.options.map((option, index) => (
@@ -410,16 +414,16 @@ const ContentManagementApp = () => {
             disabled={!newCategory.name || newCategory.options.length === 0}
             className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            Kategorie erstellen
+            Create Category
           </button>
         </div>
       </div>
 
-      {/* Bestehende Kategorien */}
+      {/* Existing Categories */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b">
           <h2 className="text-xl font-semibold text-gray-800">
-            Bestehende Kategorien ({categories.length})
+            Existing Categories ({categories.length})
           </h2>
         </div>
         
@@ -430,14 +434,14 @@ const ContentManagementApp = () => {
                 <div>
                   <h3 className="font-semibold text-lg text-gray-800">
                     {category.name}
-                    {category.id === 'geschlecht' && (
+                    {category.id === 'gender' && (
                       <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        Standard
+                        Default
                       </span>
                     )}
                   </h3>
                   <div className="mt-2">
-                    <span className="text-sm text-gray-600">Optionen: </span>
+                    <span className="text-sm text-gray-600">Options: </span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {category.options.map(option => (
                         <span key={option} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm">
@@ -448,11 +452,11 @@ const ContentManagementApp = () => {
                   </div>
                 </div>
                 
-                {category.id !== 'geschlecht' && (
+                {category.id !== 'gender' && (
                   <button
                     onClick={() => deleteCategory(category.id)}
                     className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                    title="Kategorie löschen"
+                    title="Delete Category"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
